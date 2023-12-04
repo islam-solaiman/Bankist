@@ -61,11 +61,11 @@ class BankistApp {
 
     this.createUsernames(this.accounts);
     this.login();
-    this.deposit();
-    this.withdraw();
+    // this.deposit();
+    // this.withdraw();
     this.transfer();
-    // this.loan();
-    // this.closeAccount();
+    this.loan();
+    this.closeAccount();
     this.sortMovements();
 
     // Get data from localStorage
@@ -143,29 +143,29 @@ class BankistApp {
     });
   }
 
-  deposit() {
-    this.btnDeposit.addEventListener('click', e => {
-      e.preventDefault();
-      const amount = Number(this.inputDepositAmount.value);
-      if (amount > 0 && this.currentAccount.movements) {
-        this.currentAccount.movements.push(amount);
-        this.updateUI(this.currentAccount);
-      }
-      this.inputDepositAmount.value = '';
-    });
-  }
+  // deposit() {
+  //   this.btnDeposit.addEventListener('click', e => {
+  //     e.preventDefault();
+  //     const amount = Number(this.inputDepositAmount.value);
+  //     if (amount > 0 && this.currentAccount.movements) {
+  //       this.currentAccount.movements.push(amount);
+  //       this.updateUI(this.currentAccount);
+  //     }
+  //     this.inputDepositAmount.value = '';
+  //   });
+  // }
 
-  withdraw() {
-    this.btnWithdraw.addEventListener('click', e => {
-      e.preventDefault();
-      const amount = Number(this.inputWithdrawAmount.value);
-      if (amount > 0 && this.currentAccount.movements) {
-        this.currentAccount.movements.push(-amount);
-        this.updateUI(this.currentAccount);
-      }
-      this.inputWithdrawAmount.value = '';
-    });
-  }
+  // withdraw() {
+  //   this.btnWithdraw.addEventListener('click', e => {
+  //     e.preventDefault();
+  //     const amount = Number(this.inputWithdrawAmount.value);
+  //     if (amount > 0 && this.currentAccount.movements) {
+  //       this.currentAccount.movements.push(-amount);
+  //       this.updateUI(this.currentAccount);
+  //     }
+  //     this.inputWithdrawAmount.value = '';
+  //   });
+  // }
 
   transfer() {
     this.btnTransfer.addEventListener('click', e => {
@@ -186,32 +186,32 @@ class BankistApp {
     });
   }
 
-  // loan() {
-  //   this.btnLoan.addEventListener('click', e => {
-  //     e.preventDefault();
-  //     const amount = Number(this.inputLoanAmount.value);
-  //     if (amount > 0 && this.currentAccount.movements.some(mov => mov >= amount * 0.1)) {
-  //       this.currentAccount.movements.push(amount);
-  //       this.updateUI(this.currentAccount);
-  //     }
-  //     this.inputLoanAmount.value = '';
-  //   });
-  // }
+  loan() {
+    this.btnLoan.addEventListener('click', e => {
+      e.preventDefault();
+      const amount = Number(this.inputLoanAmount.value);
+      if (amount > 0 && this.currentAccount.movements.some(mov => mov >= amount * 0.1)) {
+        this.currentAccount.movements.push(amount);
+        this.updateUI(this.currentAccount);
+      }
+      this.inputLoanAmount.value = '';
+    });
+  }
 
-  // closeAccount() {
-  //   this.btnClose.addEventListener('click', e => {
-  //     e.preventDefault();
-  //     if (
-  //       this.inputCloseUsername.value === this.currentAccount.username &&
-  //       Number(this.inputClosePin.value) === this.currentAccount.pin
-  //     ) {
-  //       const index = this.accounts.findIndex(acc => acc.username === this.currentAccount.username);
-  //       this.accounts.splice(index, 1);
-  //       this.containerApp.style.opacity = 0;
-  //     }
-  //     this.inputCloseUsername.value = this.inputClosePin.value = '';
-  //   });
-  // }
+  closeAccount() {
+    this.btnClose.addEventListener('click', e => {
+      e.preventDefault();
+      if (
+        this.inputCloseUsername.value === this.currentAccount.username &&
+        Number(this.inputClosePin.value) === this.currentAccount.pin
+      ) {
+        const index = this.accounts.findIndex(acc => acc.username === this.currentAccount.username);
+        this.accounts.splice(index, 1);
+        this.containerApp.style.opacity = 0;
+      }
+      this.inputCloseUsername.value = this.inputClosePin.value = '';
+    });
+  }
 
   sortMovements() {
     this.btnSort.addEventListener('click', e => {
