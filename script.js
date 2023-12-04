@@ -2,33 +2,72 @@
 
 class BankistApp {
   constructor() {
-    // Data
-    this.accounts = [
-      {
-        owner: 'Jonas Schmedtmann',
-        movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
-        interestRate: 1.2, // %
-        pin: 1111,
-      },
-      {
-        owner: 'Jessica Davis',
-        movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
-        interestRate: 1.5,
-        pin: 2222,
-      },
-      {
-        owner: 'Steven Thomas Williams',
-        movements: [200, -200, 340, -300, -20, 50, 400, -460],
-        interestRate: 0.7,
-        pin: 3333,
-      },
-      {
-        owner: 'Sarah Smith',
-        movements: [430, 1000, 700, 50, 90],
-        interestRate: 1,
-        pin: 4444,
-      },
-    ];
+    // Initialize accounts as an empty array initially
+    this.accounts = [];
+
+    // Other properties remain the same as in your previous code
+    // ... (other properties initialization)
+
+    this.fetchAccounts(); // Fetch accounts when the app starts
+
+    // Other functionalities and event handlers remain the same
+    // ...
+  }
+
+  async fetchAccounts() {
+    try {
+      const response = await fetch('http://localhost:3000/accounts');
+  
+      if (!response.ok) {
+        throw new Error('Could not fetch accounts');
+      }
+  
+      const fetchedAccounts = await response.json();
+  
+      if (!Array.isArray(fetchedAccounts)) {
+        console.error('Invalid data format for accounts');
+        return;
+      }
+  
+      // Fetch movements for each account
+      for (const account of fetchedAccounts) {
+        const movementsResponse = await fetch(`http://localhost:3000/movements/${account.id}`);
+        
+        if (!movementsResponse.ok) {
+          throw new Error(`Could not fetch movements for account ${account.id}`);
+        }
+  
+        const movements = await movementsResponse.json();
+  
+        if (!Array.isArray(movements)) {
+          console.error(`Invalid data format for movements of account ${account.id}`);
+          return;
+        }
+  
+        // Add movements to each account object
+        account.movements = movements;
+      }
+  
+      this.accounts = fetchedAccounts;
+  
+      // Call a method to handle UI update or perform actions based on the fetched accounts
+      this.handleFetchedAccounts();
+    } catch (error) {
+      console.error('Error fetching accounts:', error.message);
+      // Handle errors or display an error message to the user
+    }
+  }
+  
+
+  // Method to handle UI update based on fetched accounts
+  handleFetchedAccounts() {
+    // For example, log the fetched accounts
+    console.log('Fetched accounts:', this.accounts);
+
+    // You can perform other operations here based on the fetched accounts data
+    // Update UI, set up event listeners, etc.
+    // ...
+
 
     // Other properties
     this.labelWelcome = document.querySelector('.welcome');
@@ -75,32 +114,54 @@ class BankistApp {
   // Functions
   displayMovements(movements, sort = false) {
     this.containerMovements.innerHTML = '';
+  
+    if (!Array.isArray(movements)) {
+      console.error('Movements data is not an array');
+      return;
+    }
+  
     const movs = sort ? movements.slice().sort((a, b) => a - b) : movements;
+  
     movs.forEach((mov, i) => {
-      const type = mov > 0 ? 'deposit' : 'withdrawal';
+      const type = mov.movement > 0 ? 'deposit' : 'withdrawal';
       const html = `
         <div class="movements__row">
           <div class="movements__type movements__type--${type}">
             ${i + 1} ${type}
           </div>
-          <div class="movements__value">${mov}$</div>
+          <div class="movements__value">${mov.movement}$</div>
         </div>`;
       this.containerMovements.insertAdjacentHTML('afterbegin', html);
     });
-  }
+  }    
+  
 
   calcDisplayBalance(acc) {
-    acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
+    if (!Array.isArray(acc.movements) || acc.movements.length === 0) {
+      console.error('Movements data is invalid or empty');
+      return;
+    }
+  
+    const balance = acc.movements.reduce((accBalance, movement) => accBalance + parseFloat(movement.movement), 0);
+    acc.balance = balance;
     this.labelBalance.textContent = `${acc.balance}$`;
   }
+  
+  
+  
 
   calcDisplaySummary(acc) {
+    if (!Array.isArray(acc.movements) || acc.movements.length === 0) {
+      console.error('Movements data is invalid or empty');
+      return;
+    }
+  
     const incomes = acc.movements.filter(mov => mov > 0).reduce((acc, mov) => acc + mov, 0);
     this.labelSumIn.textContent = `${incomes}$`;
-
+  
     const out = acc.movements.filter(mov => mov < 0).reduce((acc, mov) => acc + mov, 0);
     this.labelSumOut.textContent = `${Math.abs(out)}$`;
-
+  
     const interest = acc.movements
       .filter(mov => mov > 0)
       .map(deposit => (deposit * acc.interestRate) / 100)
@@ -108,6 +169,7 @@ class BankistApp {
       .reduce((acc, int) => acc + int, 0);
     this.labelSumInterest.textContent = `${interest}$`;
   }
+  
 
   createUsernames(accs) {
     accs.forEach(acc => {
@@ -167,36 +229,60 @@ class BankistApp {
   //   });
   // }
 
-  transfer() {
-    this.btnTransfer.addEventListener('click', e => {
-      e.preventDefault();
-      const amount = Number(this.inputTransferAmount.value);
-      const receiverAcc = this.accounts.find(acc => acc.username === this.inputTransferTo.value);
-      this.inputTransferAmount.value = this.inputTransferTo.value = '';
-      if (
-        amount > 0 &&
-        receiverAcc &&
-        this.currentAccount.balance >= amount &&
-        receiverAcc?.username !== this.currentAccount.username
-      ) {
-        this.currentAccount.movements.push(-amount);
-        receiverAcc.movements.push(amount);
-        this.updateUI(this.currentAccount);
-      }
-    });
-  }
-
   loan() {
     this.btnLoan.addEventListener('click', e => {
       e.preventDefault();
       const amount = Number(this.inputLoanAmount.value);
-      if (amount > 0 && this.currentAccount.movements.some(mov => mov >= amount * 0.1)) {
-        this.currentAccount.movements.push(amount);
+  
+      if (amount > 0 && this.currentAccount.balance >= amount * 0.1) {
+        // Add movement for the loan (current account)
+        this.currentAccount.movements.push({ movement: amount }); // Update to an object with a movement property
+  
+        // Update UI for the current account
         this.updateUI(this.currentAccount);
+      } else {
+        // Display a message indicating that the loan cannot be granted
+        console.log('Loan request denied.');
       }
+  
       this.inputLoanAmount.value = '';
     });
   }
+  
+  
+  transfer() {
+    this.btnTransfer.addEventListener('click', e => {
+      e.preventDefault();
+      const amount = Number(this.inputTransferAmount.value);
+      const receiverUsername = this.inputTransferTo.value;
+      const receiverAcc = this.accounts.find(acc => acc.username === receiverUsername);
+  
+      this.inputTransferAmount.value = this.inputTransferTo.value = '';
+  
+      if (
+        amount > 0 &&
+        receiverAcc &&
+        this.currentAccount.balance >= amount &&
+        receiverAcc.username !== this.currentAccount.username
+      ) {
+        // Add movement for sender (current account)
+        this.currentAccount.movements.push({ movement: -amount }); // Update to an object with a movement property
+  
+        // Add movement for receiver
+        receiverAcc.movements.push({ movement: amount }); // Update to an object with a movement property
+  
+        // Update UI for both sender and receiver
+        this.updateUI(this.currentAccount);
+        // this.updateUI(receiverAcc);
+      } else {
+        // Display a message indicating that the transfer cannot be completed
+        console.log('Transfer request denied.');
+      }
+    });
+  }
+  
+  
+  
 
   closeAccount() {
     this.btnClose.addEventListener('click', e => {
