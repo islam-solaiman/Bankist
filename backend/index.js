@@ -88,108 +88,76 @@ app.get('/movements/:accountId', (req, res) => {
 
 // Express endpoint for transferring money between accounts
 app.post('/transfer', (req, res) => {
-const { senderId, receiverId, amount } = req.body;
+    const { senderId, receiverId, amount } = req.body;
 
-// Fetch sender's and receiver's accounts from the database
-connection.query('SELECT * FROM accounts WHERE id = ? OR id = ?', [senderId, receiverId], (err, results) => {
-    if (err) {
-    console.error('Error fetching accounts:', err);
-    res.status(500).json({ error: 'Error fetching accounts' });
-    return;
-    }
-
-    if (results.length !== 2) {
-    res.status(404).json({ error: 'Accounts not found' });
-    return;
-    }
-
-    const sender = results.find(acc => acc.id === senderId);
-    const receiver = results.find(acc => acc.id === receiverId);
-
-    if (!sender || !receiver) {
-    res.status(404).json({ error: 'Sender or receiver account not found' });
-    return;
-    }
-
-    if (sender.balance < amount) {
-    res.status(400).json({ error: 'Insufficient balance for transfer' });
-    return;
-    }
-
-    // Begin a transaction to ensure atomicity
-    connection.beginTransaction(err => {
-    if (err) {
-        console.error('Transaction failed to start:', err);
-        res.status(500).json({ error: 'Transaction failed to start' });
+    // Fetch sender's and receiver's accounts from the database
+    connection.query('SELECT * FROM accounts WHERE id = ? OR id = ?', [senderId, receiverId], (err, results) => {
+        if (err) {
+        console.error('Error fetching accounts:', err);
+        res.status(500).json({ error: 'Error fetching accounts' });
         return;
-    }
-
-    // Update sender's balance with deducted amount
-    connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, senderId], (err, result) => {
-        if (err) {
-        return connection.rollback(() => {
-            console.error('Error updating sender\'s balance:', err);
-            res.status(500).json({ error: 'Error updating sender\'s balance' });
-        });
         }
 
-        // Update receiver's balance with added amount
-        connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, receiverId], (err, result) => {
-        if (err) {
-            return connection.rollback(() => {
-            console.error('Error updating receiver\'s balance:', err);
-            res.status(500).json({ error: 'Error updating receiver\'s balance' });
-            });
+        if (results.length !== 2) {
+        res.status(404).json({ error: 'Accounts not found' });
+        return;
         }
 
-        // Commit the transaction if both queries are successful
-        connection.commit(err => {
+        const sender = results.find(acc => acc.id === senderId);
+        const receiver = results.find(acc => acc.id === receiverId);
+
+        if (!sender || !receiver) {
+        res.status(404).json({ error: 'Sender or receiver account not found' });
+        return;
+        }
+
+        if (sender.balance < amount) {
+        res.status(400).json({ error: 'Insufficient balance for transfer' });
+        return;
+        }
+
+        // Begin a transaction to ensure atomicity
+        connection.beginTransaction(err => {
+        if (err) {
+            console.error('Transaction failed to start:', err);
+            res.status(500).json({ error: 'Transaction failed to start' });
+            return;
+        }
+
+        // Update sender's balance with deducted amount
+        connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, senderId], (err, result) => {
             if (err) {
             return connection.rollback(() => {
-                console.error('Transaction failed to commit:', err);
-                res.status(500).json({ error: 'Transaction failed to commit' });
+                console.error('Error updating sender\'s balance:', err);
+                res.status(500).json({ error: 'Error updating sender\'s balance' });
             });
             }
 
-            res.status(200).json({ message: 'Transfer successful' });
-        });
-        });
-    });
-    });
-});
-});  
-
-    // Update sender's balance with deducted amount
-    connection.query('INSERT INTO movements (account_id, movement) VALUES (?, ?)', [senderId, -amount], (err, result) => {
-        if (err) {
-        return connection.rollback(() => {
-            res.status(500).json({ error: 'Error updating sender\'s balance' });
-        });
-        }
-
-        // Update receiver's balance with added amount
-        connection.query('INSERT INTO movements (account_id, movement) VALUES (?, ?)', [receiverId, amount], (err, result) => {
-        if (err) {
-            return connection.rollback(() => {
-            res.status(500).json({ error: 'Error updating receiver\'s balance' });
-            });
-        }
-
-        // Commit the transaction if both queries are successful
-        connection.commit(err => {
+            // Update receiver's balance with added amount
+            connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, receiverId], (err, result) => {
             if (err) {
-            return connection.rollback(() => {
-                res.status(500).json({ error: 'Transaction failed to commit' });
-            });
+                return connection.rollback(() => {
+                console.error('Error updating receiver\'s balance:', err);
+                res.status(500).json({ error: 'Error updating receiver\'s balance' });
+                });
             }
 
-            res.status(200).json({ message: 'Transfer successful' });
+            // Commit the transaction if both queries are successful
+            connection.commit(err => {
+                if (err) {
+                return connection.rollback(() => {
+                    console.error('Transaction failed to commit:', err);
+                    res.status(500).json({ error: 'Transaction failed to commit' });
+                });
+                }
+
+                res.status(200).json({ message: 'Transfer successful' });
+            });
+            });
         });
         });
     });
-    });
-});
-});
+    });  
 
 // Express endpoint for requesting a loan
 app.post('/loan', (req, res) => {
