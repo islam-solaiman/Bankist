@@ -1,9 +1,13 @@
 # Bankist App Project
 
+# Live Demo :  https://islam-solaiman.github.io/Bankist/
+
+![Alt](https://github.com/islam-solaiman/Banklist-App/blob/main/ezgif.com-video-to-gif.gif?raw=true)
+
 
 ## About The Project:
 
-this project is about online banking interface:
+The is project is about online banking interface:
 interface includes:
     - Current User Balance
     - User Movements With Dates

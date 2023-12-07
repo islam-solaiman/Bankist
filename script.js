@@ -308,7 +308,8 @@ class BankistApp {
   }
 
   setLocalStorage() {
-    localStorage.setItem('movements', JSON.stringify(this.accounts.movements));
+    const allMovements = this.accounts.flatMap(acc => acc.movements.map(mov => mov.movement));
+    localStorage.setItem('movements', JSON.stringify(allMovements));
   }
 
   getLocalStorage() {
