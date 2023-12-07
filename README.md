@@ -3,7 +3,7 @@
 
 ## About The Project:
 
-The is project is about online banking interface:
+this project is about online banking interface:
 interface includes:
     - Current User Balance
     - User Movements With Dates
