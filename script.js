@@ -5,12 +5,12 @@ class BankistApp {
     // Initialize accounts as an empty array initially
     this.accounts = [];
 
-    // Other properties remain the same as in your previous code
+    // Other Properties remain the same as in your previous code
     // ... (other properties initialization)
 
     this.fetchAccounts(); // Fetch accounts when the app starts
 
-    // Other functionalities and event handlers remain the same
+    // other functionalities and event handlers remain the same
     // ...
   }
 
@@ -29,7 +29,7 @@ class BankistApp {
         return;
       }
   
-      // Fetch movements for each account
+      // Fetch Movements for each account
       for (const account of fetchedAccounts) {
         const movementsResponse = await fetch(`http://localhost:3000/movements/${account.id}`);
         
