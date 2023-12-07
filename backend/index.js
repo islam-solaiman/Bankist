@@ -5,10 +5,10 @@ const mysql = require('mysql2');
 const app = express();
 const port = 3000;
 
-// Use CORS middleware
+// Use CORS Middleware
 app.use(cors());
 
-// MySQL Connection
+// MySQL connection
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root', //'your_username'''
@@ -24,7 +24,7 @@ connection.connect(err => {
     console.log('Connected to MySQL database');
 });
 
-// Create table for accounts
+// Create Table for accounts
 const createAccountsTable = `
     CREATE TABLE IF NOT EXISTS accounts (
     id INT AUTO_INCREMENT PRIMARY KEY,
