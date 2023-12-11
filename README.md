@@ -1,14 +1,5 @@
 # Bankist App Project
 
-# Live Demo :  https://islam-solaiman.github.io/Bankist/
-
-![Alt](https://github.com/islam-solaiman/Banklist-App/blob/main/ezgif.com-video-to-gif.gif?raw=true)
-
-## Test Users:
-    - UserName: js - PassWord: 1111
-    - UserName: jd - PassWord: 2222
-    - UserName: sw - PassWord: 3333
-    - UserName: ss - PassWord: 4444
 
 ## About The Project:
 
@@ -35,3 +26,6 @@ interface includes:
         - While Choosing Close Account The user has to provide his name And Password Then the Account will be Closed
         - The app Allows only 30 Second of Inactivity then the user will be logged out otherwise while making any transaction the timer will be resetted again to 30 sec 
 
+## Test Users:
+    - UserName: js - PassWord: 1111
+    - UserName: jd - PassWord: 2222

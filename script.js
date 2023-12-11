@@ -16,7 +16,7 @@ class BankistApp {
 
   async fetchAccounts() {
     try {
-      const response = await fetch('http://localhost:3000/accounts');
+      const response = await fetch('https://bankist.database.windows.net/accounts'); // Replace with your hosted backend URL
   
       if (!response.ok) {
         throw new Error('Could not fetch accounts');
@@ -31,7 +31,7 @@ class BankistApp {
   
       // Fetch movements for each account
       for (const account of fetchedAccounts) {
-        const movementsResponse = await fetch(`http://localhost:3000/movements/${account.id}`);
+        const movementsResponse = await fetch(`https://bankist.database.windows.net/movements/${account.id}`); // Replace with your hosted backend URL
   
         if (!movementsResponse.ok) {
           throw new Error(`Could not fetch movements for account ${account.id}`);
@@ -60,18 +60,6 @@ class BankistApp {
       console.error('Error fetching accounts:', error.message);
       // Handle errors or display an error message to the user
     }
-  }  
-  
-
-  // Method to handle UI update based on fetched accounts
-  handleFetchedAccounts() {
-    // For example, log the fetched accounts
-    console.log('Fetched accounts:', this.accounts);
-
-    // You can perform other operations here based on the fetched accounts data
-    // Update UI, set up event listeners, etc.
-    // ...
-
 
     // Other properties
     this.labelWelcome = document.querySelector('.welcome');
@@ -325,10 +313,18 @@ class BankistApp {
 }
 
 getLocalStorage() {
-  const movements = JSON.parse(localStorage.getItem('movements'));
-  this.currentAccount.movements = movements || []; // Set retrieved movements to current account's movements
-  // You might want to update the UI with these movements
-  this.updateUI(this.currentAccount);
+  const movements = localStorage.getItem('movements');
+  if (movements !== null) {
+    const parsedMovements = JSON.parse(movements);
+    this.currentAccount.movements = parsedMovements; // Set retrieved movements to current account's movements
+    // Update the UI with these movements
+    this.updateUI(this.currentAccount);
+  } else {
+    // Handle the case where 'movements' in localStorage is undefined or does not exist
+    console.error('No movements found in localStorage.');
+    // Perform any necessary action or leave the account's movements as an empty array
+    this.currentAccount.movements = [];
+  }
 }
 
 
