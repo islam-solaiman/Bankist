@@ -1,5 +1,6 @@
 # Bankist App Project
 
+![Alt](https://github.com/islam-solaiman/Bankist/blob/main/ezgif.com-video-to-gif.gif?raw=true)
 
 ## About The Project:
 
