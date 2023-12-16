@@ -75,6 +75,20 @@ nav {
   transition: all 0.3s;
 }
 
+.logout__btn {
+  border: 1px solid;
+  border-radius: 50%;
+  background: none;
+  font-size: 2rem;
+  color: inherit;
+  cursor: pointer;
+  padding: 1rem;
+  margin-left: 1rem;
+  background-color: #c81f19;
+  color: white;
+  transition: all 0.3s;
+}
+
 .login__btn:hover,
 .login__btn:focus,
 .btn--sort:hover,

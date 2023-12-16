@@ -1,22 +1,15 @@
-'use strict';
-
 class BankistApp {
   constructor() {
     // Initialize accounts as an empty array initially
     this.accounts = [];
 
-    // Other properties remain the same as in your previous code
-    // ... (other properties initialization)
-
     this.fetchAccounts(); // Fetch accounts when the app starts
 
-    // Other functionalities and event handlers remain the same
-    // ...
   }
 
   async fetchAccounts() {
     try {
-      const response = await fetch('https://bankist.database.windows.net/accounts'); // Replace with your hosted backend URL
+      const response = await fetch('http://localhost:3000/accounts');
   
       if (!response.ok) {
         throw new Error('Could not fetch accounts');
@@ -29,37 +22,45 @@ class BankistApp {
         return;
       }
   
-      // Fetch movements for each account
       for (const account of fetchedAccounts) {
-        const movementsResponse = await fetch(`https://bankist.database.windows.net/movements/${account.id}`); // Replace with your hosted backend URL
+        try {
+          const movementsResponse = await fetch(`http://localhost:3000/movements/${account.id}`);
   
-        if (!movementsResponse.ok) {
-          throw new Error(`Could not fetch movements for account ${account.id}`);
-        }
+          if (!movementsResponse.ok) {
+            throw new Error(`Could not fetch movements for account ${account.id}. Status: ${movementsResponse.status}`);
+          }
   
-        const movements = await movementsResponse.json();
+          const movements = await movementsResponse.json();
   
-        if (!Array.isArray(movements)) {
-          console.error(`Invalid data format for movements of account ${account.id}`);
-          return;
-        }
+          if (!Array.isArray(movements)) {
+            console.error(`Invalid data format for movements of account ${account.id}`);
+            return;
+          }
   
-        // Check if account object has 'movements' property before updating it
-        if (!account.hasOwnProperty('movements')) {
-          account.movements = movements;
-        } else {
-          console.error(`'movements' property already exists for account ${account.id}`);
+          // Add movements to each account object
+          account.movements = movements || []; // Ensure movements array exists even if empty
+        } catch (error) {
+          console.error('Error fetching movements:', error.message);
+          // Handle errors or display an error message to the user
         }
       }
   
-      this.accounts = fetchedAccounts;
+      this.accounts = fetchedAccounts || []; // Ensure accounts array exists even if empty
   
-      // Call a method to handle UI update or perform actions based on the fetched accounts
       this.handleFetchedAccounts();
     } catch (error) {
       console.error('Error fetching accounts:', error.message);
       // Handle errors or display an error message to the user
     }
+  }
+  
+  
+
+  // Method to handle UI update based on fetched accounts
+  handleFetchedAccounts() {
+    // For example, log the fetched accounts
+    console.log('Fetched accounts:', this.accounts);
+
 
     // Other properties
     this.labelWelcome = document.querySelector('.welcome');
@@ -72,6 +73,7 @@ class BankistApp {
     this.containerApp = document.querySelector('.app');
     this.containerMovements = document.querySelector('.movements');
     this.btnLogin = document.querySelector('.login__btn');
+    this.btnLogout = document.querySelector('.logout__btn');
     this.btnDeposit = document.querySelector('.form__btn--deposit');
     this.btnWithdraw = document.querySelector('.form__btn--withdraw');
     this.btnTransfer = document.querySelector('.form__btn--transfer');
@@ -98,7 +100,9 @@ class BankistApp {
     this.loan();
     this.closeAccount();
     this.sortMovements();
-
+    this.calcDisplaySummary();
+    this.updateDate();
+    this.logout();
     // Get data from localStorage
     this.getLocalStorage();
   }
@@ -138,9 +142,6 @@ class BankistApp {
     acc.balance = balance;
     this.labelBalance.textContent = `${acc.balance}$`;
   }
-  
-  
-  
 
   calcDisplaySummary(acc) {
     if (!Array.isArray(acc.movements) || acc.movements.length === 0) {
@@ -148,20 +149,18 @@ class BankistApp {
       return;
     }
   
-    const incomes = acc.movements.filter(mov => mov > 0).reduce((acc, mov) => acc + mov, 0);
-    this.labelSumIn.textContent = `${incomes}$`;
+    const totalDeposits = acc.movements
+      .filter(mov => mov.movement > 0)
+      .reduce((acc, mov) => acc + parseFloat(mov.movement), 0);
+    this.labelSumIn.textContent = `${totalDeposits}$`;
   
-    const out = acc.movements.filter(mov => mov < 0).reduce((acc, mov) => acc + mov, 0);
-    this.labelSumOut.textContent = `${Math.abs(out)}$`;
-  
-    const interest = acc.movements
-      .filter(mov => mov > 0)
-      .map(deposit => (deposit * acc.interestRate) / 100)
-      .filter(int => int >= 1)
-      .reduce((acc, int) => acc + int, 0);
-    this.labelSumInterest.textContent = `${interest}$`;
+    const totalWithdrawals = acc.movements
+      .filter(mov => mov.movement < 0)
+      .reduce((acc, mov) => acc + parseFloat(mov.movement), 0);
+    this.labelSumOut.textContent = `${Math.abs(totalWithdrawals)}$`;
   }
   
+
 
   createUsernames(accs) {
     accs.forEach(acc => {
@@ -176,10 +175,26 @@ class BankistApp {
   updateUI(acc) {
     this.displayMovements(acc.movements);
     this.calcDisplayBalance(acc);
-    this.calcDisplaySummary(acc);
+    this.calcDisplaySummary(acc); // Passing 'acc' as a parameter instead of 'accs'
+    this.updateDate();
+    this.startLogOutTimer();
   }
+  
+
 
   // Event handlers
+
+  updateDate() {
+    const now = new Date();
+    const day = `${now.getDate()}`.padStart(2, 0);
+    const month = `${now.getMonth() + 1}`.padStart(2, 0);
+    const year = `${now.getFullYear()}`;
+    const hour = `${now.getHours()}`.padStart(2, 0);
+    const min = `${now.getMinutes()}`.padStart(2, 0);
+
+    this.labelDate.textContent = `${day}/${month}/${year}, ${hour}:${min}`
+  }
+  
   login() {
     this.btnLogin.addEventListener('click', e => {
       e.preventDefault();
@@ -193,38 +208,49 @@ class BankistApp {
 
         // Local storage 
         this.setLocalStorage();
-      }
+      }else
+        alert('Wrong User Name Or Password');
     });
   }
 
+  // deposit() {
+  //   this.btnDeposit.addEventListener('click', e => {
+  //     e.preventDefault();
+  //     const amount = Number(this.inputDepositAmount.value);
+  //     if (amount > 0 && this.currentAccount.movements) {
+  //       this.currentAccount.movements.push(amount);
+  //       this.updateUI(this.currentAccount);
+  //     }
+  //     this.inputDepositAmount.value = '';
+  //   });
+  // }
+
+  // withdraw() {
+  //   this.btnWithdraw.addEventListener('click', e => {
+  //     e.preventDefault();
+  //     const amount = Number(this.inputWithdrawAmount.value);
+  //     if (amount > 0 && this.currentAccount.movements) {
+  //       this.currentAccount.movements.push(-amount);
+  //       this.updateUI(this.currentAccount);
+  //     }
+  //     this.inputWithdrawAmount.value = '';
+  //   });
+  // }
 
   loan() {
-    this.btnLoan.addEventListener('click', async (e) => {
+    this.btnLoan.addEventListener('click', e => {
       e.preventDefault();
       const amount = Number(this.inputLoanAmount.value);
   
-      if (amount > 0 && this.currentAccount && this.currentAccount.movements) {
-        try {
-          // Proceed with the loan request
-          // ... (your fetch request for loan POST)
+      if (amount > 0 && this.currentAccount.balance >= amount * 0.1) {
+        // Add movement for the loan (current account)
+        this.currentAccount.movements.push({ movement: amount }); // Update to an object with a movement property
   
-          // Ensure that this.currentAccount.movements is initialized as an array
-          if (!Array.isArray(this.currentAccount.movements)) {
-            this.currentAccount.movements = [];
-          }
-  
-          // Update UI for the current account after successful loan
-          this.currentAccount.movements.push({ movement: amount }); // Update to an object with a movement property
-          this.updateUI(this.currentAccount);
-  
-          console.log('Loan successful');
-        } catch (error) {
-          console.error('Loan request failed:', error.message);
-          // Handle failed loan request - display an error message or perform necessary actions
-        }
+        // Update UI for the current account
+        this.updateUI(this.currentAccount);
       } else {
-        console.log('Loan request denied: Invalid amount or insufficient balance.');
-        // Display a message indicating that the loan cannot be granted due to invalid amount or insufficient balance
+        // Display a message indicating that the loan cannot be granted
+        alert('Loan request denied, Current Balance must be more than or equal 10% of the requested loan amount');
       }
   
       this.inputLoanAmount.value = '';
@@ -232,10 +258,8 @@ class BankistApp {
   }
   
   
-  
-  
   transfer() {
-    this.btnTransfer.addEventListener('click', async e => {
+    this.btnTransfer.addEventListener('click', e => {
       e.preventDefault();
       const amount = Number(this.inputTransferAmount.value);
       const receiverUsername = this.inputTransferTo.value;
@@ -249,41 +273,56 @@ class BankistApp {
         this.currentAccount.balance >= amount &&
         receiverAcc.username !== this.currentAccount.username
       ) {
-        try {
-          const response = await fetch('http://localhost:3000/transfer', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              senderId: this.currentAccount.id,
-              receiverId: receiverAcc.id,
-              amount: amount
-            })
-          });
+        // Add negative movement for the sender (current account)
+        this.currentAccount.movements.push({ movement: -amount }); // Update to an object with a negative movement
   
-          if (!response.ok) {
-            throw new Error('Transfer failed: ' + response.statusText);
-          }
+        // Add positive movement for receiver
+        receiverAcc.movements.push({ movement: amount }); // Update to an object with a positive movement
   
-          const result = await response.json();
-          console.log('Transfer successful:', result.message);
-          
-          // Update UI or perform necessary actions after successful transfer
-          // For example, update account information, refresh balances, etc.
-          // ...
-  
-        } catch (error) {
-          console.error('Transfer failed:', error.message);
-          // Handle failed transfer - display an error message or perform necessary actions
-        }
+        // Update UI for both sender and receiver
+        this.updateUI(this.currentAccount);
       } else {
-        console.log('Transfer request denied.');
         // Display a message indicating that the transfer cannot be completed
+        alert('Transfer request denied, transfered amount must be more than or equal cuurent balance');
       }
     });
   }
 
+  sortMovements() {
+    this.btnSort.addEventListener('click', e => {
+      e.preventDefault();
+
+      // Toggle sorting order
+      this.currentAccount.movements.reverse();
+
+      this.displayMovements(this.currentAccount.movements);
+      this.sorted = !this.sorted; // Update the sorted flag
+    });
+  }
+
+
+  startLogOutTimer() {
+    // Set time to 2 minutes (2 * 60 seconds)
+    let time = 300;
+
+    const timer = setInterval(() => {
+      const min = String(Math.trunc(time / 60)).padStart(2, '0');
+      const sec = String(time % 60).padStart(2, '0');
+
+      // Assign the remaining time to labelTimer.textContent
+      this.labelTimer.textContent = `${min}:${sec}`;
+
+      // Decrease time by 1 second
+      time--;
+
+      if (time < 0) {
+        clearInterval(timer);
+        // Set necessary actions upon timeout
+        this.labelWelcome.textContent = 'Log in to get started';
+        this.containerApp.style.opacity = 0;
+      }
+    }, 1000); // Call the timer every second (1000 milliseconds)
+  }
 
   closeAccount() {
     this.btnClose.addEventListener('click', e => {
@@ -300,33 +339,20 @@ class BankistApp {
     });
   }
 
-  sortMovements() {
-    this.btnSort.addEventListener('click', e => {
-      e.preventDefault();
-      this.displayMovements(this.currentAccount.movements, !this.sorted);
-      this.sorted = !this.sorted;
+  logout() {
+    this.btnLogout.addEventListener(onclick, function(){
+      this.containerApp.style.opacity = 0;
     });
   }
 
   setLocalStorage() {
-    localStorage.setItem('movements', JSON.stringify(this.currentAccount.movements));
-}
-
-getLocalStorage() {
-  const movements = localStorage.getItem('movements');
-  if (movements !== null) {
-    const parsedMovements = JSON.parse(movements);
-    this.currentAccount.movements = parsedMovements; // Set retrieved movements to current account's movements
-    // Update the UI with these movements
-    this.updateUI(this.currentAccount);
-  } else {
-    // Handle the case where 'movements' in localStorage is undefined or does not exist
-    console.error('No movements found in localStorage.');
-    // Perform any necessary action or leave the account's movements as an empty array
-    this.currentAccount.movements = [];
+    localStorage.setItem('movements', JSON.stringify(this.accounts.movements));
   }
-}
 
+  getLocalStorage() {
+    const data = localStorage.getItem('movements');
+  console.log(data);
+  }
 
   reset() {
     localStorage.removeItem('movements');
